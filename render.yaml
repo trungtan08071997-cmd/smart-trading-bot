@@ -10,3 +10,5 @@ services:
     envVars:
       PYTHON_VERSION: 3.10
       TZ: Asia/Ho_Chi_Minh
+    PIP_NO_CACHE_DIR: "false"
+

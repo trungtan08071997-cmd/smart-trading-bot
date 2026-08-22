@@ -1,0 +1,19 @@
+{
+    "symbol": "ETH/USDT",
+    "timeframe": "1h",
+    "params": {
+        "RSI_Period": 6,
+        "MACD_Fast": 12,
+        "MACD_Slow": 26,
+        "EMA_Periods": [9, 20],
+        "Bollinger_Period": 20,
+        "ATR_Length": 14,
+        "Signal_Threshold": 5.0,
+        "News_Weight": 0.5
+    },
+    "optimization": {
+        "save_logs_to_csv": "trade_history.csv",
+        "recovery_days": 7,
+        "auto_adjust_mode": true
+    }
+}

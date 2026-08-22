@@ -5,10 +5,11 @@ services:
     buildCommand: |
       apt-get update && apt-get install -y build-essential
       pip install --upgrade pip
+      pip install cython numpy
       pip install -r requirements.txt
-    startCommand: "python ai_optimizer_bot.py"
+    startCommand: "python -u ai_optimizer_bot.py"
     envVars:
       PYTHON_VERSION: 3.10
       TZ: Asia/Ho_Chi_Minh
-    PIP_NO_CACHE_DIR: "false"
-
+      PIP_NO_CACHE_DIR: "false"
+      PIP_DEFAULT_TIMEOUT: "100"

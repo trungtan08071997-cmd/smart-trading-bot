@@ -349,10 +349,32 @@ class SmartOptimizedBot:
         if os.path.exists(self.log_file):
             self.save_config()
 
+from flask import Flask
+import threading
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "SMART TRADING ADVISOR V3 đang chạy nền..."
+
+@app.route("/health")
+def health():
+    return "OK"
+
 if __name__ == "__main__":
     try:
+        # Chạy bot trong thread riêng
         bot = SmartOptimizedBot(symbol="BTC/USDT")
-        bot.run()
+        t = threading.Thread(target=bot.run)
+        t.daemon = True
+        t.start()
+
+        # Chạy Flask để Render detect port
+        # Port mặc định Render sẽ lấy từ biến môi trường PORT
+        port = int(os.environ.get("PORT", 10000))
+        app.run(host="0.0.0.0", port=port)
     except KeyboardInterrupt:
         print("\n\n=== ĐÃ DỪNG BOT ===")
+
 

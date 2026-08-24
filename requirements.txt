@@ -1,8 +1,8 @@
 setuptools==75.1.0
 wheel==0.44.0
 numpy==2.2.6
-pandas==2.2.2
-pandas_ta==0.4.67b0
+pandas==2.3.2
+pandas_ta==0.4.71b0
 ccxt==4.3.89
 numba==0.61.2
 cython==3.0.10

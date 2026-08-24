@@ -165,19 +165,11 @@ class SmartOptimizedBot:
             return None
 
     def fetch_news(self):
-        try:
-            return {
-                "news": "Bitcoin jumps 8.7% to $69,749 after US Treasury bond buyback plan",
-                "sentiment_boost": 1,
-                "date": "2026-08-20 09:51:00"
-            }
-        except Exception as e:
-            print(f"[NEWS ERROR] {e}")
-            return {
-                "news": "No fresh news available",
-                "sentiment_boost": 0,
-                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
+        return {
+            "news": "Bitcoin jumps 8.7% to $69,749 after US Treasury bond buyback plan",
+            "sentiment_boost": 1,
+            "date": "2026-08-20 09:51:00"
+        }
 
     def sentiment_score(self, sentiment_boost):
         return sentiment_boost * self.config['params']['News_Weight']
@@ -216,7 +208,7 @@ class SmartOptimizedBot:
         elif action == "SELL":
             sl = ind['price'] * 1.02
             tp = ind['price'] * 0.96
-        else:
+        else
             sl = None; tp = None
 
         return {
@@ -298,7 +290,7 @@ class SmartOptimizedBot:
         
         self.last_optimization_time = now
 
-    def run(self):
+def run(self):
     print("=" * 40)
     print("SMART TRADING ADVISOR V3 - WebSocket Edition")
     print("=" * 40)

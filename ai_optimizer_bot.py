@@ -374,6 +374,18 @@ def logs():
     except Exception as e:
         return f"Lỗi đọc log: {e}"
 
+@app.route("/action")
+def action():
+    try:
+        if os.path.exists("action.csv"):
+            with open("action.csv", "r") as f:
+                content = f.read()
+            return Response(content, mimetype="text/plain")
+        else:
+            return "Chưa có dữ liệu action."
+    except Exception as e:
+        return f"Lỗi đọc action: {e}"
+
 if __name__ == "__main__":
     try:
         # Chạy bot trong thread riêng
@@ -387,5 +399,6 @@ if __name__ == "__main__":
         app.run(host="0.0.0.0", port=port)
     except KeyboardInterrupt:
         print("\n\n=== ĐÃ DỪNG BOT ===")
+
 
 

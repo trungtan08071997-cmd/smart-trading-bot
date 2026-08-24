@@ -339,3 +339,17 @@ if __name__ == "__main__":
         bot.run()
     except KeyboardInterrupt:
         print("\n\n=== ĐÃ DỪNG BOT ===")
+
+# Flask server để Render nhận diện port và hiển thị log
+from flask import Flask
+import os
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "SMART TRADING ADVISOR V3 đang chạy...<br><br>Kiểm tra log trong Render console để xem tín hiệu realtime."
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

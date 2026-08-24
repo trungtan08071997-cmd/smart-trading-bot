@@ -9,7 +9,7 @@ services:
       pip install -r requirements.txt
     startCommand: "python -u ai_optimizer_bot.py"
     envVars:
-      PYTHON_VERSION: 3.10
+      PYTHON_VERSION: 3.11
       TZ: Asia/Ho_Chi_Minh
       PIP_NO_CACHE_DIR: "false"
       PIP_DEFAULT_TIMEOUT: "100"

@@ -208,7 +208,7 @@ class SmartOptimizedBot:
         elif action == "SELL":
             sl = ind['price'] * 1.02
             tp = ind['price'] * 0.96
-        else
+        else:
             sl = None; tp = None
 
         return {
@@ -290,14 +290,14 @@ class SmartOptimizedBot:
         
         self.last_optimization_time = now
 
-def run(self):
-    print("=" * 40)
-    print("SMART TRADING ADVISOR V3 - WebSocket Edition")
-    print("=" * 40)
+    def run(self):
+        print("=" * 40)
+        print("SMART TRADING ADVISOR V3 - WebSocket Edition")
+        print("=" * 40)
 
-    # Bắt đầu stream nến 1h
-    self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
-    self.twm.join()
+        # Bắt đầu stream nến 1h từ Binance
+        self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
+        self.twm.join()
 
         while True:
             try:
@@ -305,34 +305,33 @@ def run(self):
                 if ind is not None:
                     signal = self.analyze_signal(ind)
                     if signal:
+                        # Hiển thị log ra console
                         print(f"\n--- [GHI CHÉP] {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} ---")
                         print(f"Giá BTC: ${signal['price']:.2f} | RSI: {signal['rsi']} | MACD: {signal['macd']} | BB_Width: {signal['bb_width']} | Vol: {signal['volume']}")
                         print(f"Tín hiệu AI: {signal['action']} | Score: {signal['score']:.1f} | Conf: {signal['confidence']:.0f}%")
                         print(f"News: {signal['news']} (Sentiment: {signal['sentiment']}, Date: {signal['news_date']})")
 
-                        # Lưu log nếu có hành động mua/bán để giảm noise trong file
-                        #if signal['action'] != 'HOLD':
+                        # Ghi log vào file trade_history.csv
                         self.log_signal_to_csv(signal)
 
-                        # 👉 NEW: gọi update_action_csv mỗi 1 tiếng
+                        # Cập nhật action.csv mỗi 1 tiếng
                         if time.time() - self.last_action_update > 3600:
                             self.update_action_csv(signal)
                             self.last_action_update = time.time()
-
                 else:
                     print("[WAIT] Chờ dữ liệu...")
 
-                # Kiểm tra tối ưu hóa định kỳ (bên trong hàm đã kiểm tra thời gian rồi)
+                # Kiểm tra tối ưu hóa định kỳ
                 self.check_retraining()
 
             except Exception as e:
                 print(f"[ERROR] Lỗi hệ thống: {e}")
 
-            time.sleep(1800) # Chờ 30 phút cho mỗi chu kỳ
+            time.sleep(1800)  # Chờ 30 phút cho mỗi chu kỳ
 
-        # Phần này sẽ không bao giờ chạy vì while True, nhưng nếu break ra được thì chạy
+        # Nếu vòng lặp break thì lưu config
         if os.path.exists(self.log_file):
-             self.save_config()
+            self.save_config()
 
 if __name__ == "__main__":
     try:

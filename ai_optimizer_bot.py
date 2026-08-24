@@ -369,7 +369,7 @@ class SmartOptimizedBot:
             except Exception as e:
                 print(f"[ERROR] Lỗi hệ thống: {e}")
 
-            time.sleep(300) # Chờ 5 phút cho mỗi chu kỳ
+            time.sleep(1800) # Chờ 30 phút cho mỗi chu kỳ
 
         # Phần này sẽ không bao giờ chạy vì while True, nhưng nếu break ra được thì chạy
         if os.path.exists(self.log_file):

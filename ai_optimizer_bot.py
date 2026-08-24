@@ -349,7 +349,7 @@ class SmartOptimizedBot:
         if os.path.exists(self.log_file):
             self.save_config()
 
-from flask import Flask
+from flask import Flask, Response
 import threading
 
 app = Flask(__name__)
@@ -362,6 +362,18 @@ def home():
 def health():
     return "OK"
 
+@app.route("/logs")
+def logs():
+    try:
+        if os.path.exists("trade_history.csv"):
+            with open("trade_history.csv", "r") as f:
+                content = f.read()
+            return Response(content, mimetype="text/plain")
+        else:
+            return "Chưa có dữ liệu log."
+    except Exception as e:
+        return f"Lỗi đọc log: {e}"
+
 if __name__ == "__main__":
     try:
         # Chạy bot trong thread riêng
@@ -371,7 +383,6 @@ if __name__ == "__main__":
         t.start()
 
         # Chạy Flask để Render detect port
-        # Port mặc định Render sẽ lấy từ biến môi trường PORT
         port = int(os.environ.get("PORT", 10000))
         app.run(host="0.0.0.0", port=port)
     except KeyboardInterrupt:

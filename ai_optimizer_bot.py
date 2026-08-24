@@ -333,13 +333,6 @@ class SmartOptimizedBot:
         if os.path.exists(self.log_file):
             self.save_config()
 
-if __name__ == "__main__":
-    try:
-        bot = SmartOptimizedBot(symbol="BTC/USDT")
-        bot.run()
-    except KeyboardInterrupt:
-        print("\n\n=== ĐÃ DỪNG BOT ===")
-
 from flask import Flask
 import os
 from threading import Thread
@@ -363,4 +356,3 @@ if __name__ == "__main__":
         bot.run()
     except KeyboardInterrupt:
         print("\n\n=== ĐÃ DỪNG BOT ===")
-

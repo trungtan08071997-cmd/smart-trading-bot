@@ -294,12 +294,21 @@ class SmartOptimizedBot:
         print("=" * 40)
         print("SMART TRADING ADVISOR V3 - WebSocket Edition")
         print("=" * 40)
-
-        # Bắt đầu stream nến 1h từ Binance
-        self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
-        self.twm.join()
-
+        
         while True:
+            try:
+                # Khởi động WebSocket
+                self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
+                self.twm.join()
+            except Exception as e:
+                print(f"[WS ERROR] WebSocket bị ngắt: {e}")
+                print("⏳ Thử reconnect sau 10 giây...")
+                time.sleep(10)
+                # Tự động reconnect
+                self.twm = ThreadedWebsocketManager()
+                self.twm.start()
+                continue
+
             try:
                 ind = self.fetch_and_analyze()
                 if ind is not None:

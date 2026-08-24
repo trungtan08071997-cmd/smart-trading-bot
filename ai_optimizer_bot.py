@@ -340,9 +340,9 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\n=== ĐÃ DỪNG BOT ===")
 
-# Flask server để Render nhận diện port và hiển thị log
 from flask import Flask
 import os
+from threading import Thread
 
 app = Flask(__name__)
 
@@ -350,6 +350,17 @@ app = Flask(__name__)
 def home():
     return "SMART TRADING ADVISOR V3 đang chạy...<br><br>Kiểm tra log trong Render console để xem tín hiệu realtime."
 
-if __name__ == "__main__":
+def start_flask():
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    # Chạy Flask song song với bot
+    Thread(target=start_flask).start()
+
+    try:
+        bot = SmartOptimizedBot(symbol="BTC/USDT")
+        bot.run()
+    except KeyboardInterrupt:
+        print("\n\n=== ĐÃ DỪNG BOT ===")
+

@@ -1,6 +1,6 @@
 numpy==2.2.2
 pandas==2.2.3
-git+https://github.com/twopirllc/pandas-ta.git@0.4.50b0
+git+ssh://git@github.com/twopirllc/pandas-ta.git@0.4.50b0
 ccxt==4.2.92
 numba==0.60.0
 cython==3.0.10

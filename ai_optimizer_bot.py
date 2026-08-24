@@ -15,7 +15,7 @@ class SmartOptimizedBot:
         self.df = pd.DataFrame()
         self.twm = ThreadedWebsocketManager()
         self.twm.start()
-        self.exchange = ccxt.binanceusdm()
+        #self.exchange = ccxt.binanceusdm()
         self.config_file = "config.json"
         self.log_file = "trade_history.csv"
         self.last_optimization_time = 0
@@ -96,89 +96,79 @@ class SmartOptimizedBot:
             ])
         print("[ACTION] Đã cập nhật action.csv")
         
-    def handle_kline(self, msg):
-        kline = msg['k']
-        time = pd.to_datetime(kline['t'], unit='ms')
-        close = float(kline['c'])
-        volume = float(kline['v'])
+def handle_kline(self, msg):
+    kline = msg['k']
+    time = pd.to_datetime(kline['t'], unit='ms')
+    close = float(kline['c'])
+    volume = float(kline['v'])
 
-        # Cập nhật DataFrame
-        new_row = {"time": time, "close": close, "volume": volume}
-        self.df = pd.concat([self.df, pd.DataFrame([new_row])]).drop_duplicates(subset="time", keep="last")
-        self.df.set_index("time", inplace=True)
+    new_row = {"time": time, "close": close, "volume": volume}
+    self.df = pd.concat([self.df, pd.DataFrame([new_row])]).drop_duplicates(subset="time", keep="last")
+    self.df.set_index("time", inplace=True)
 
-        print(f"[WS] {self.symbol} Close={close}, Vol={volume}")
+    print(f"[WS] {self.symbol} Close={close}, Vol={volume}")
 
-    def fetch_and_analyze(self):
-        try:
-            # 1. Fetch dữ liệu OHLCV
-            bars = self.exchange.fetch_ohlcv(self.symbol, '1h', limit=1000)
-            if not bars or len(bars) < 30:
-                print(f"[INFO] Chưa đủ dữ liệu lịch sử ({len(bars)} nến), chờ thêm...")
-                return None
+    # 👉 Phân tích và ra lệnh ngay khi có dữ liệu mới
+    ind = self.fetch_and_analyze()
+    if ind:
+        signal = self.analyze_signal(ind)
+        if signal:
+            self.log_signal_to_csv(signal)
+            if time.timestamp() - self.last_action_update > 3600:
+                self.update_action_csv(signal)
+                self.last_action_update = time.timestamp()
 
-            df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-            df['time'] = pd.to_datetime(df['time'], unit='ms')
-            df.set_index('time', inplace=True)
-
-            # 2. Kiểm tra đủ dữ liệu để tính chỉ báo
-            min_required = max(
-                30,
-                self.config['params']['MACD_Fast'] + self.config['params']['MACD_Slow'],
-                self.config['params']['RSI_Period']
-            )
-            if len(df) < min_required:
-                print(f"[INFO] Dữ liệu chưa đủ để tính chỉ báo (cần {min_required}). Đợi lần sau...")
-                return None
-
-            last_row = df.iloc[-1]
-
-            # --- B. RSI ---
-            df['rsi'] = ta.rsi(df['close'], length=self.config['params']['RSI_Period'])
-            rsi = df['rsi'].iloc[-1] if not pd.isna(df['rsi'].iloc[-1]) else 50.0
-
-            # --- C. MACD ---
-            macd_full = ta.macd(
-                df['close'],
-                fast=self.config['params']['MACD_Fast'],
-                slow=self.config['params']['MACD_Slow'],
-                signal=9
-            )
-            df['macd'] = macd_full.iloc[:, 0]   # MACD line
-            df['macd_signal'] = macd_full.iloc[:, 1]   # Signal line
-            macd_val = df['macd'].iloc[-1]
-            macd_signal = df['macd_signal'].iloc[-1]
-
-            # --- D. Bollinger Bands ---
-            bb_full = ta.bbands(df['close'], length=self.config['params']['Bollinger_Period'], std=2.0)
-            df['bb_upper'] = bb_full.iloc[:, 0]
-            df['bb_lower'] = bb_full.iloc[:, 2]
-            df['bb_width'] = df['bb_upper'] - df['bb_lower']
-
-            bb_upper = df['bb_upper'].iloc[-1]
-            bb_lower = df['bb_lower'].iloc[-1]
-            bb_width = df['bb_width'].iloc[-1]
-
-            price = last_row['close']
-            volume = last_row['volume']
-
-            return {
-                "price": float(price),
-                "rsi": float(rsi),
-                "macd": float(macd_val),
-                "macd_signal": float(macd_signal),
-                "bb_upper": float(bb_upper),
-                "bb_lower": float(bb_lower),
-                "bb_width": float(bb_width),
-                "volume": float(volume)
-            }
-
-        except Exception as e:
-            print(f"[LỖI SYSTEM] Lỗi xử lý chung: {e}")
-            import traceback
-            traceback.print_exc()
+def fetch_and_analyze(self):
+    try:
+        if len(self.df) < 30:
+            print("[INFO] Chưa đủ dữ liệu từ WebSocket, chờ thêm...")
             return None
 
+        last_row = self.df.iloc[-1]
+
+        # RSI
+        self.df['rsi'] = ta.rsi(self.df['close'], length=self.config['params']['RSI_Period'])
+        rsi = self.df['rsi'].iloc[-1] if not pd.isna(self.df['rsi'].iloc[-1]) else 50.0
+
+        # MACD
+        macd_full = ta.macd(
+            self.df['close'],
+            fast=self.config['params']['MACD_Fast'],
+            slow=self.config['params']['MACD_Slow'],
+            signal=9
+        )
+        self.df['macd'] = macd_full.iloc[:, 0]
+        self.df['macd_signal'] = macd_full.iloc[:, 1]
+        macd_val = self.df['macd'].iloc[-1]
+        macd_signal = self.df['macd_signal'].iloc[-1]
+
+        # Bollinger Bands
+        bb_full = ta.bbands(self.df['close'], length=self.config['params']['Bollinger_Period'], std=2.0)
+        self.df['bb_upper'] = bb_full.iloc[:, 0]
+        self.df['bb_lower'] = bb_full.iloc[:, 2]
+        self.df['bb_width'] = self.df['bb_upper'] - self.df['bb_lower']
+
+        bb_upper = self.df['bb_upper'].iloc[-1]
+        bb_lower = self.df['bb_lower'].iloc[-1]
+        bb_width = self.df['bb_width'].iloc[-1]
+
+        price = last_row['close']
+        volume = last_row['volume']
+
+        return {
+            "price": float(price),
+            "rsi": float(rsi),
+            "macd": float(macd_val),
+            "macd_signal": float(macd_signal),
+            "bb_upper": float(bb_upper),
+            "bb_lower": float(bb_lower),
+            "bb_width": float(bb_width),
+            "volume": float(volume)
+        }
+
+    except Exception as e:
+        print(f"[LỖI SYSTEM] Lỗi xử lý WebSocket: {e}")
+        return None
 
     def fetch_news(self):
         try:

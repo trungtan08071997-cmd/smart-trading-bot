@@ -336,12 +336,74 @@ class SmartOptimizedBot:
 from flask import Flask
 import os
 from threading import Thread
+import csv
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "SMART TRADING ADVISOR V3 đang chạy...<br><br>Kiểm tra log trong Render console để xem tín hiệu realtime."
+    return """
+    <h2>SMART TRADING ADVISOR V3 đang chạy...</h2>
+    <p>Xem tín hiệu cơ bản tại <a href='/latest'>/latest</a></p>
+    <p>Xem tín hiệu đầy đủ tại <a href='/latest_full'>/latest_full</a></p>
+    <p>Xem 10 log gần nhất tại <a href='/logs'>/logs</a></p>
+    """
+
+@app.route("/latest")
+def latest_signal():
+    try:
+        with open("action.csv", "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            if rows:
+                last = rows[-1]
+                return f"""
+                <h3>Tín hiệu mới nhất</h3>
+                <p>Thời gian: {last['Date']}</p>
+                <p>Giá BTC: {last['Price']}</p>
+                <p>Action: {last['Action']}</p>
+                <p>Confidence: {last['Confidence']}%</p>
+                """
+            else:
+                return "Chưa có tín hiệu nào."
+    except Exception as e:
+        return f"Lỗi đọc file: {e}"
+
+@app.route("/latest_full")
+def latest_full():
+    try:
+        with open("trade_history.csv", "r") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            if rows:
+                last = rows[-1]
+                return f"""
+                <h3>Tín hiệu mới nhất (Full)</h3>
+                <p>Ngày/Giờ: {last['Date']}</p>
+                <p>Giá BTC: {last['Price']}</p>
+                <p>RSI: {last['RSI']}</p>
+                <p>MACD: {last['MACD']}</p>
+                <p>Volume: {last['Volume']}</p>
+                <p>Bollinger Width: {last['BB_Width']}</p>
+                <p>Score: {last['Score_Total']}</p>
+                <p>Confidence: {last['Confidence']}</p>
+                <p>Action: {last['Signal_Action']}</p>
+                <p>News: {last['News']} (Sentiment: {last['Sentiment']}, Date: {last['News_Date']})</p>
+                <p>SL: {last['SL']} | TP: {last['TP']}</p>
+                """
+            else:
+                return "Chưa có tín hiệu nào."
+    except Exception as e:
+        return f"Lỗi đọc file: {e}"
+
+@app.route("/logs")
+def show_logs():
+    try:
+        with open("trade_history.csv", "r") as f:
+            lines = f.readlines()[-10:]  # Hiển thị 10 dòng cuối
+        return "<h3>10 log gần nhất</h3><pre>" + "".join(lines) + "</pre>"
+    except Exception as e:
+        return f"Lỗi đọc log: {e}"
 
 def start_flask():
     port = int(os.environ.get("PORT", 5000))

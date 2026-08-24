@@ -367,10 +367,12 @@ def logs():
     try:
         if os.path.exists("trade_history.csv"):
             with open("trade_history.csv", "r") as f:
-                content = f.read()
-            return Response(content, mimetype="text/plain")
+                lines = f.readlines()
+            if len(lines) <= 1:  # chỉ có header, chưa có dữ liệu
+                return "File trade_history.csv đã tạo nhưng chưa có dữ liệu."
+            return Response("".join(lines), mimetype="text/plain")
         else:
-            return "Chưa có dữ liệu log."
+            return "File trade_history.csv chưa được tạo."
     except Exception as e:
         return f"Lỗi đọc log: {e}"
 
@@ -379,10 +381,12 @@ def action():
     try:
         if os.path.exists("action.csv"):
             with open("action.csv", "r") as f:
-                content = f.read()
-            return Response(content, mimetype="text/plain")
+                lines = f.readlines()
+            if len(lines) <= 1:  # chỉ có header, chưa có dữ liệu
+                return "File action.csv đã tạo nhưng chưa có dữ liệu."
+            return Response("".join(lines), mimetype="text/plain")
         else:
-            return "Chưa có dữ liệu action."
+            return "File action.csv chưa được tạo."
     except Exception as e:
         return f"Lỗi đọc action: {e}"
 

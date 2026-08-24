@@ -307,9 +307,16 @@ class SmartOptimizedBot:
                     if signal:
                         # Hiển thị log ra console
                         print(f"\n--- [GHI CHÉP] {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} ---")
-                        print(f"Giá BTC: ${signal['price']:.2f} | RSI: {signal['rsi']} | MACD: {signal['macd']} | BB_Width: {signal['bb_width']} | Vol: {signal['volume']}")
-                        print(f"Tín hiệu AI: {signal['action']} | Score: {signal['score']:.1f} | Conf: {signal['confidence']:.0f}%")
+                        print(f"Giá BTC: ${signal['price']:.2f}")
+                        print(f"RSI: {signal['rsi']}")
+                        print(f"MACD: {signal['macd']}")
+                        print(f"Volume: {signal['volume']}")
+                        print(f"Bollinger Width: {signal['bb_width']}")
+                        print(f"Score: {signal['score']}")
+                        print(f"Confidence: {signal['confidence']}%")
+                        print(f"Action: {signal['action']}")
                         print(f"News: {signal['news']} (Sentiment: {signal['sentiment']}, Date: {signal['news_date']})")
+                        print(f"SL: {signal['sl']} | TP: {signal['tp']}")
 
                         # Ghi log vào file trade_history.csv
                         self.log_signal_to_csv(signal)
@@ -333,88 +340,10 @@ class SmartOptimizedBot:
         if os.path.exists(self.log_file):
             self.save_config()
 
-from flask import Flask
-import os
-from threading import Thread
-import csv
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return """
-    <h2>SMART TRADING ADVISOR V3 đang chạy...</h2>
-    <p>Xem tín hiệu cơ bản tại <a href='/latest'>/latest</a></p>
-    <p>Xem tín hiệu đầy đủ tại <a href='/latest_full'>/latest_full</a></p>
-    <p>Xem 10 log gần nhất tại <a href='/logs'>/logs</a></p>
-    """
-
-@app.route("/latest")
-def latest_signal():
-    try:
-        with open("action.csv", "r") as f:
-            reader = csv.DictReader(f)
-            rows = list(reader)
-            if rows:
-                last = rows[-1]
-                return f"""
-                <h3>Tín hiệu mới nhất</h3>
-                <p>Thời gian: {last['Date']}</p>
-                <p>Giá BTC: {last['Price']}</p>
-                <p>Action: {last['Action']}</p>
-                <p>Confidence: {last['Confidence']}%</p>
-                """
-            else:
-                return "Chưa có tín hiệu nào."
-    except Exception as e:
-        return f"Lỗi đọc file: {e}"
-
-@app.route("/latest_full")
-def latest_full():
-    try:
-        with open("trade_history.csv", "r") as f:
-            reader = csv.DictReader(f)
-            rows = list(reader)
-            if rows:
-                last = rows[-1]
-                return f"""
-                <h3>Tín hiệu mới nhất (Full)</h3>
-                <p>Ngày/Giờ: {last['Date']}</p>
-                <p>Giá BTC: {last['Price']}</p>
-                <p>RSI: {last['RSI']}</p>
-                <p>MACD: {last['MACD']}</p>
-                <p>Volume: {last['Volume']}</p>
-                <p>Bollinger Width: {last['BB_Width']}</p>
-                <p>Score: {last['Score_Total']}</p>
-                <p>Confidence: {last['Confidence']}</p>
-                <p>Action: {last['Signal_Action']}</p>
-                <p>News: {last['News']} (Sentiment: {last['Sentiment']}, Date: {last['News_Date']})</p>
-                <p>SL: {last['SL']} | TP: {last['TP']}</p>
-                """
-            else:
-                return "Chưa có tín hiệu nào."
-    except Exception as e:
-        return f"Lỗi đọc file: {e}"
-
-@app.route("/logs")
-def show_logs():
-    try:
-        with open("trade_history.csv", "r") as f:
-            lines = f.readlines()[-10:]  # Hiển thị 10 dòng cuối
-        return "<h3>10 log gần nhất</h3><pre>" + "".join(lines) + "</pre>"
-    except Exception as e:
-        return f"Lỗi đọc log: {e}"
-
-def start_flask():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
 if __name__ == "__main__":
-    # Chạy Flask song song với bot
-    Thread(target=start_flask).start()
-
     try:
         bot = SmartOptimizedBot(symbol="BTC/USDT")
         bot.run()
     except KeyboardInterrupt:
         print("\n\n=== ĐÃ DỪNG BOT ===")
+

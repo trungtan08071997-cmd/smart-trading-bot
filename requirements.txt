@@ -1,6 +1,9 @@
-pandas==2.2.2
-pandas_ta==0.3.14b0
-ccxt==3.0.0
-cython==0.29.36
-gunicorn==20.1.0
-requests==2.31.0
+numpy==2.2.2
+pandas==2.2.3
+pandas_ta==0.4.50b0
+ccxt==4.2.92
+numba==0.60.0
+cython==3.0.10
+requests==2.32.3
+python-dateutil==2.9.0.post0
+pytz==2024.2

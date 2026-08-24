@@ -1,7 +1,7 @@
 numpy==1.26.4
 pandas==2.2.3
-pandas_ta==0.4.71b0
-ccxt==4.92
+pandas_ta==0.4.7b0
+ccxt==4.3.89
 numba==0.61.2
 cython==3.0.10
 requests==2.32.3

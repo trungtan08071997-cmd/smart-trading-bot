@@ -11,7 +11,7 @@ import random
 class SmartOptimizedBot:
     def __init__(self, symbol="BTC/USDT"):
         self.symbol = symbol
-        self.exchange = ccxt.binance()
+        self.exchange = ccxt.binancecm()
         self.config_file = "config.json"
         self.log_file = "trade_history.csv"
         self.last_optimization_time = 0

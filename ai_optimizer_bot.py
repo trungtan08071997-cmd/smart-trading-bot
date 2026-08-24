@@ -11,7 +11,7 @@ import random
 class SmartOptimizedBot:
     def __init__(self, symbol="BTC/USDT"):
         self.symbol = symbol
-        self.exchange = ccxt.coinbase()
+        self.exchange = ccxt.binance()
         self.config_file = "config.json"
         self.log_file = "trade_history.csv"
         self.last_optimization_time = 0
@@ -51,7 +51,7 @@ class SmartOptimizedBot:
         file_exists = os.path.exists(self.log_file) and os.path.getsize(self.log_file) > 0
         mode = 'a' if file_exists else 'w'
         headers = [
-            'Timestamp', 'Price', 'RSI', 'MACD', 'Volume',
+            'Date', 'Time', 'Price', 'RSI', 'MACD', 'Volume',
             'BB_Width', 'Score_Total', 'Confidence', 'Signal_Action', 'News', 'Sentiment', 'SL', 'TP', 'News_Date'
         ]
         try:
@@ -80,7 +80,7 @@ class SmartOptimizedBot:
             print(f"Lỗi khi lưu log: {e}")
 
     def update_action_csv(self, signal):
-        headers = ['Timestamp', 'Price', 'Action', 'Confidence']
+        headers = ['Date', 'Time', 'Price', 'Action', 'Confidence']
         with open("action.csv", 'w', newline='') as f:   # luôn ghi đè
             writer = csv.writer(f)
             writer.writerow(headers)
@@ -346,7 +346,7 @@ class SmartOptimizedBot:
                 if ind is not None:
                     signal = self.analyze_signal(ind)
                     if signal:
-                        print(f"\n--- [GHI CHÉP] {datetime.now().strftime('%H:%M')} ---")
+                        print(f"\n--- [GHI CHÉP] {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} ---")
                         print(f"Giá BTC: ${signal['price']:.2f} | RSI: {signal['rsi']} | MACD: {signal['macd']} | BB_Width: {signal['bb_width']} | Vol: {signal['volume']}")
                         print(f"Tín hiệu AI: {signal['action']} | Score: {signal['score']:.1f} | Conf: {signal['confidence']:.0f}%")
                         print(f"News: {signal['news']} (Sentiment: {signal['sentiment']}, Date: {signal['news_date']})")

@@ -1,26 +1,23 @@
 import pandas as pd
 import pandas_ta as ta
-import ccxt
 import json
 from datetime import datetime, timedelta
 import os
 import time
 import csv
-import random
 from binance import ThreadedWebsocketManager
 
 class SmartOptimizedBot:
-    def __init__(self, symbol="BTC/USDT"):
+    def __init__(self, symbol="BTCUSDT"):
         self.symbol = symbol
         self.df = pd.DataFrame()
         self.twm = ThreadedWebsocketManager()
         self.twm.start()
-        #self.exchange = ccxt.binanceusdm()
         self.config_file = "config.json"
         self.log_file = "trade_history.csv"
         self.last_optimization_time = 0
         self.load_config()
-        self.last_action_update = 0   # NEW: theo dõi lần cập nhật action.csv
+        self.last_action_update = 0
 
     def load_config(self):
         if os.path.exists(self.config_file):
@@ -56,7 +53,8 @@ class SmartOptimizedBot:
         mode = 'a' if file_exists else 'w'
         headers = [
             'Date', 'Time', 'Price', 'RSI', 'MACD', 'Volume',
-            'BB_Width', 'Score_Total', 'Confidence', 'Signal_Action', 'News', 'Sentiment', 'SL', 'TP', 'News_Date'
+            'BB_Width', 'Score_Total', 'Confidence', 'Signal_Action',
+            'News', 'Sentiment', 'SL', 'TP', 'News_Date'
         ]
         try:
             with open(self.log_file, mode, newline='') as f:
@@ -74,10 +72,10 @@ class SmartOptimizedBot:
                     f"{signal_data['confidence']:.1f}%",
                     signal_data['action'],
                     signal_data['news'],
-                    signal_data['sentiment'],   # thêm sentiment vào đây
+                    signal_data['sentiment'],
                     signal_data['sl'],
                     signal_data['tp'],
-                    signal_data['news_date']   # lưu ngày tin tức xuất bản
+                    signal_data['news_date']
                 ])
             print(f"[LOG] Đã ghi tín hiệu vào file: {self.log_file}")
         except Exception as e:
@@ -85,7 +83,7 @@ class SmartOptimizedBot:
 
     def update_action_csv(self, signal):
         headers = ['Date', 'Time', 'Price', 'Action', 'Confidence']
-        with open("action.csv", 'w', newline='') as f:   # luôn ghi đè
+        with open("action.csv", 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(headers)
             writer.writerow([
@@ -95,95 +93,86 @@ class SmartOptimizedBot:
                 signal['confidence']
             ])
         print("[ACTION] Đã cập nhật action.csv")
-        
-def handle_kline(self, msg):
-    kline = msg['k']
-    time = pd.to_datetime(kline['t'], unit='ms')
-    close = float(kline['c'])
-    volume = float(kline['v'])
 
-    new_row = {"time": time, "close": close, "volume": volume}
-    self.df = pd.concat([self.df, pd.DataFrame([new_row])]).drop_duplicates(subset="time", keep="last")
-    self.df.set_index("time", inplace=True)
+    def handle_kline(self, msg):
+        kline = msg['k']
+        t = pd.to_datetime(kline['t'], unit='ms')
+        close = float(kline['c'])
+        volume = float(kline['v'])
 
-    print(f"[WS] {self.symbol} Close={close}, Vol={volume}")
+        new_row = {"time": t, "close": close, "volume": volume}
+        self.df = pd.concat([self.df, pd.DataFrame([new_row])]).drop_duplicates(subset="time", keep="last")
+        self.df.set_index("time", inplace=True)
 
-    # 👉 Phân tích và ra lệnh ngay khi có dữ liệu mới
-    ind = self.fetch_and_analyze()
-    if ind:
-        signal = self.analyze_signal(ind)
-        if signal:
-            self.log_signal_to_csv(signal)
-            if time.timestamp() - self.last_action_update > 3600:
-                self.update_action_csv(signal)
-                self.last_action_update = time.timestamp()
+        print(f"[WS] {self.symbol} Close={close}, Vol={volume}")
 
-def fetch_and_analyze(self):
-    try:
-        if len(self.df) < 30:
-            print("[INFO] Chưa đủ dữ liệu từ WebSocket, chờ thêm...")
+        ind = self.fetch_and_analyze()
+        if ind:
+            signal = self.analyze_signal(ind)
+            if signal:
+                self.log_signal_to_csv(signal)
+                if time.time() - self.last_action_update > 3600:
+                    self.update_action_csv(signal)
+                    self.last_action_update = time.time()
+
+    def fetch_and_analyze(self):
+        try:
+            if len(self.df) < 30:
+                print("[INFO] Chưa đủ dữ liệu từ WebSocket, chờ thêm...")
+                return None
+
+            last_row = self.df.iloc[-1]
+
+            self.df['rsi'] = ta.rsi(self.df['close'], length=self.config['params']['RSI_Period'])
+            rsi = self.df['rsi'].iloc[-1] if not pd.isna(self.df['rsi'].iloc[-1]) else 50.0
+
+            macd_full = ta.macd(
+                self.df['close'],
+                fast=self.config['params']['MACD_Fast'],
+                slow=self.config['params']['MACD_Slow'],
+                signal=9
+            )
+            self.df['macd'] = macd_full.iloc[:, 0]
+            self.df['macd_signal'] = macd_full.iloc[:, 1]
+            macd_val = self.df['macd'].iloc[-1]
+            macd_signal = self.df['macd_signal'].iloc[-1]
+
+            bb_full = ta.bbands(self.df['close'], length=self.config['params']['Bollinger_Period'], std=2.0)
+            self.df['bb_upper'] = bb_full.iloc[:, 0]
+            self.df['bb_lower'] = bb_full.iloc[:, 2]
+            self.df['bb_width'] = self.df['bb_upper'] - self.df['bb_lower']
+
+            bb_upper = self.df['bb_upper'].iloc[-1]
+            bb_lower = self.df['bb_lower'].iloc[-1]
+            bb_width = self.df['bb_width'].iloc[-1]
+
+            price = last_row['close']
+            volume = last_row['volume']
+
+            return {
+                "price": float(price),
+                "rsi": float(rsi),
+                "macd": float(macd_val),
+                "macd_signal": float(macd_signal),
+                "bb_upper": float(bb_upper),
+                "bb_lower": float(bb_lower),
+                "bb_width": float(bb_width),
+                "volume": float(volume)
+            }
+
+        except Exception as e:
+            print(f"[LỖI SYSTEM] Lỗi xử lý WebSocket: {e}")
             return None
-
-        last_row = self.df.iloc[-1]
-
-        # RSI
-        self.df['rsi'] = ta.rsi(self.df['close'], length=self.config['params']['RSI_Period'])
-        rsi = self.df['rsi'].iloc[-1] if not pd.isna(self.df['rsi'].iloc[-1]) else 50.0
-
-        # MACD
-        macd_full = ta.macd(
-            self.df['close'],
-            fast=self.config['params']['MACD_Fast'],
-            slow=self.config['params']['MACD_Slow'],
-            signal=9
-        )
-        self.df['macd'] = macd_full.iloc[:, 0]
-        self.df['macd_signal'] = macd_full.iloc[:, 1]
-        macd_val = self.df['macd'].iloc[-1]
-        macd_signal = self.df['macd_signal'].iloc[-1]
-
-        # Bollinger Bands
-        bb_full = ta.bbands(self.df['close'], length=self.config['params']['Bollinger_Period'], std=2.0)
-        self.df['bb_upper'] = bb_full.iloc[:, 0]
-        self.df['bb_lower'] = bb_full.iloc[:, 2]
-        self.df['bb_width'] = self.df['bb_upper'] - self.df['bb_lower']
-
-        bb_upper = self.df['bb_upper'].iloc[-1]
-        bb_lower = self.df['bb_lower'].iloc[-1]
-        bb_width = self.df['bb_width'].iloc[-1]
-
-        price = last_row['close']
-        volume = last_row['volume']
-
-        return {
-            "price": float(price),
-            "rsi": float(rsi),
-            "macd": float(macd_val),
-            "macd_signal": float(macd_signal),
-            "bb_upper": float(bb_upper),
-            "bb_lower": float(bb_lower),
-            "bb_width": float(bb_width),
-            "volume": float(volume)
-        }
-
-    except Exception as e:
-        print(f"[LỖI SYSTEM] Lỗi xử lý WebSocket: {e}")
-        return None
 
     def fetch_news(self):
         try:
-            # Gọi search_web để lấy tin tức mới nhất về Bitcoin
-            # (ở đây giả lập, thực tế bạn cần parse từ kết quả search_web)
-            news_data = {
+            return {
                 "news": "Bitcoin jumps 8.7% to $69,749 after US Treasury bond buyback plan",
                 "sentiment_boost": 1,
-                "date": "2026-08-20 09:51:00"   # ngày xuất bản từ web
+                "date": "2026-08-20 09:51:00"
             }
-            return news_data
-
         except Exception as e:
             print(f"[NEWS ERROR] {e}")
-            # fallback nếu lỗi
             return {
                 "news": "No fresh news available",
                 "sentiment_boost": 0,
@@ -191,65 +180,36 @@ def fetch_and_analyze(self):
             }
 
     def sentiment_score(self, sentiment_boost):
-        # Trả về điểm số sentiment dựa trên boost đã tính sẵn
         return sentiment_boost * self.config['params']['News_Weight']
 
     def analyze_signal(self, ind):
         if ind is None: return None
-
         score = 0.0
 
-        # RSI Logic (Cân bằng hơn)
-        if ind['rsi'] < 30:
-            score += 3.0
-        elif ind['rsi'] > 70:
-            score -= 3.0
+        if ind['rsi'] < 30: score += 3.0
+        elif ind['rsi'] > 70: score -= 3.0
 
-        # MACD Logic
-        if ind['macd'] > ind['macd_signal']:
-            score += 2.5
-        elif ind['macd'] < -ind['macd_signal']: # Divergence potential
-             score -= 1.0
+        if ind['macd'] > ind['macd_signal']: score += 2.5
+        elif ind['macd'] < -ind['macd_signal']: score -= 1.0
 
-        # Bollinger Bands Logic (Sửa logic cũ)
-        # Nếu giá gần Upper Band, coi là overbought (giảm điểm), nếu gần Lower Band tăng điểm
         if ind['bb_width'] > 0:
             percent_price = (ind['price'] - ind['bb_lower']) / ind['bb_width']
-            if percent_price > 0.8: # Gần Upper Band
-                score -= 2.0
-            elif percent_price < 0.2: # Gần Lower Band
-                score += 2.0
-        else:
-            # Trường hợp BB chập chờn
-            if ind['price'] < 10000: # Placeholder check, nếu price thấp hơn threshold nào đó
-                 score += 1.0
+            if percent_price > 0.8: score -= 2.0
+            elif percent_price < 0.2: score += 2.0
 
-        # Volume Logic (Tối ưu)
-        # So sánh volume hiện tại với trung bình 20 phiên trước
-        # df_vol = pd.DataFrame(ind.get('volume', 0)) 
-        # Lưu ý: Để lấy được volume history cần fetch thêm dataframe, ở đây giả định logic đơn giản
-        if ind['volume'] > 1000: # Ví dụ check absolute value cho demo
-            score += 0.5
+        if ind['volume'] > 1000: score += 0.5
 
-        # Sentiment Logic
         news_data = self.fetch_news()
         sentiment_points = self.sentiment_score(news_data['sentiment_boost'])
         score += sentiment_points
 
-        current_threshold = float(self.config['params']['Signal_Threshold'])
-        
-        # Xác định hành động
-        if score > current_threshold:
-            action = "BUY"
-        elif score < -current_threshold:
-            action = "SELL"
-        else:
-            action = "HOLD"
+        threshold = float(self.config['params']['Signal_Threshold'])
+        if score > threshold: action = "BUY"
+        elif score < -threshold: action = "SELL"
+        else: action = "HOLD"
 
-        # Confidence Score
         confidence = min(abs(score) * 10, 100)
 
-        # Thêm SL và TP
         if action == "BUY":
             sl = ind['price'] * 0.98
             tp = ind['price'] * 1.04
@@ -257,8 +217,7 @@ def fetch_and_analyze(self):
             sl = ind['price'] * 1.02
             tp = ind['price'] * 0.96
         else:
-            sl = None
-            tp = None
+            sl = None; tp = None
 
         return {
             "price": ind['price'],
@@ -340,15 +299,13 @@ def fetch_and_analyze(self):
         self.last_optimization_time = now
 
     def run(self):
-        print("=" * 40)
-        print("SMART TRADING ADVISOR V3 - Optimized Edition")
-        print("=" * 40)
-        # 👉 Stream nến 1h từ Binance
-        self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
-        self.twm.join()
+    print("=" * 40)
+    print("SMART TRADING ADVISOR V3 - WebSocket Edition")
+    print("=" * 40)
 
-        # Bắt đầu check config ban đầu
-        self.check_retraining() 
+    # Bắt đầu stream nến 1h
+    self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
+    self.twm.join()
 
         while True:
             try:

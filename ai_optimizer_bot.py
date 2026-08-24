@@ -7,10 +7,14 @@ import os
 import time
 import csv
 import random
+from binance import ThreadedWebsocketManager
 
 class SmartOptimizedBot:
     def __init__(self, symbol="BTC/USDT"):
         self.symbol = symbol
+        self.df = pd.DataFrame()
+        self.twm = ThreadedWebsocketManager()
+        self.twm.start()
         self.exchange = ccxt.binanceusdm()
         self.config_file = "config.json"
         self.log_file = "trade_history.csv"
@@ -91,6 +95,19 @@ class SmartOptimizedBot:
                 signal['confidence']
             ])
         print("[ACTION] Đã cập nhật action.csv")
+        
+    def handle_kline(self, msg):
+        kline = msg['k']
+        time = pd.to_datetime(kline['t'], unit='ms')
+        close = float(kline['c'])
+        volume = float(kline['v'])
+
+        # Cập nhật DataFrame
+        new_row = {"time": time, "close": close, "volume": volume}
+        self.df = pd.concat([self.df, pd.DataFrame([new_row])]).drop_duplicates(subset="time", keep="last")
+        self.df.set_index("time", inplace=True)
+
+        print(f"[WS] {self.symbol} Close={close}, Vol={volume}")
 
     def fetch_and_analyze(self):
         try:
@@ -336,6 +353,9 @@ class SmartOptimizedBot:
         print("=" * 40)
         print("SMART TRADING ADVISOR V3 - Optimized Edition")
         print("=" * 40)
+        # 👉 Stream nến 1h từ Binance
+        self.twm.start_kline_socket(callback=self.handle_kline, symbol=self.symbol, interval="1h")
+        self.twm.join()
 
         # Bắt đầu check config ban đầu
         self.check_retraining() 

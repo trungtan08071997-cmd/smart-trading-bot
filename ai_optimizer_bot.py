@@ -26,7 +26,7 @@ class SmartOptimizedBot:
         else:
             self.config = {
                 "symbol": self.symbol,
-                "timeframe": "1h",
+                "timeframe": "15m",
                 "params": {
                     "RSI_Period": 6,
                     "MACD_Fast": 12,
@@ -117,7 +117,7 @@ class SmartOptimizedBot:
 
     def fetch_and_analyze(self):
         try:
-            if len(self.df) < 30:
+            if len(self.df) < 50:
                 print("[INFO] Chưa đủ dữ liệu từ WebSocket, chờ thêm...")
                 return None
 
